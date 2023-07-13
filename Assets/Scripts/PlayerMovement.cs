@@ -47,19 +47,18 @@ public class PlayerMovement : MonoBehaviour
     bool GroundCheck() {
         // Approach ground check with using a ray through a RayCast
 	    RaycastHit hit;
-        Physics.Raycast(transform.position + Vector3.up, transform.up * -1f, out hit, 1);
+        bool groundTest = Physics.Raycast(transform.position + Vector3.up, transform.up * -1f, out hit, 1f);
+        //Debug.Log(hit.collider);
         // hit will contain the distance so check if it corresponds to the object on plane
-	    if(Physics.Raycast(transform.position + transform.up, transform.up * -1f, out hit, 1)) {
+	    if(groundTest) {
             //Debug.Log("Landed");
             return true;
         }
 	    else 
-            return false;
-		    
+            return false;    
     }
 
     void Update() {
-        Debug.DrawRay(transform.position + Vector3.up, transform.up * -1f, Color.green);
         bool isGround = GroundCheck();
         if (isGround) {
             jumpBoostTotal = 0;
@@ -67,17 +66,20 @@ public class PlayerMovement : MonoBehaviour
         }
         if (isGround && Input.GetKeyDown(KeyCode.Space)) {
             StartCoroutine(timer());
+            //Debug.Log("DoubleJump1");
             initalJump = true;
             doubleJump1 = true;
         }
         else if (!isGround && Input.GetKeyDown(KeyCode.Space)) {
             if (doubleJump2 == true) {
                 StartCoroutine(timer());
+                //Debug.Log("DoubleJump3");
                 doubleJump3 = true;
             }
         }
         if (Input.GetKeyUp(KeyCode.Space)) {
             if (doubleJump1) {
+                //Debug.Log("DoubleJump2");
                 doubleJump2 = true;
             }
         }
@@ -128,7 +130,7 @@ public class PlayerMovement : MonoBehaviour
                 jumpCount++;
                 if (jumpBoostTotal > jumpMax)
                     jumpBoostTotal = jumpMax;
-                Debug.Log("Jump 2: " + jumpBoostTotal);
+                //Debug.Log("Jump 2: " + jumpBoostTotal);
                 rb.AddForce(Vector3.up * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
                 jumpBoostTotal = 0;
                 allowBoost = false;
@@ -138,7 +140,7 @@ public class PlayerMovement : MonoBehaviour
             
         }
         else
-            rb.AddForce(Vector3.down * gravity);
+           rb.AddForce(Vector3.down * gravity);
 
         //Debug.Log(jumpCount);
         Vector3 movVec = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical"));
