@@ -33,6 +33,8 @@ public class PlayerMovement : MonoBehaviour
     public float jumpMax;
     private float jumpLimit;
     private bool delayer = false;
+    public float turnSpeed = 1f;
+    Quaternion movRot = Quaternion.identity;
 
     void Start()
     {
@@ -109,8 +111,9 @@ public class PlayerMovement : MonoBehaviour
             if (performJump) {
                 initalJump = false;
                 jumpCount++;
-                Debug.Log("Jump 1: " + jumpBoostTotal);
-                rb.AddForce(Vector3.up * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
+                //Debug.Log("Jump 1: " + jumpBoostTotal);
+                //rb.AddForce(Vector3.up * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
+                rb.AddForce(Vector3.up * (initalJumpAmt) * jumpSpd);
                 jumpBoostTotal = 0;
                 allowBoost = false;
                 //Debug.Log("Single Jump");
@@ -123,6 +126,8 @@ public class PlayerMovement : MonoBehaviour
                 doubleJump2 = false;
                 doubleJump3 = false;
                 jumpCount++;
+                if (jumpBoostTotal > jumpMax)
+                    jumpBoostTotal = jumpMax;
                 Debug.Log("Jump 2: " + jumpBoostTotal);
                 rb.AddForce(Vector3.up * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
                 jumpBoostTotal = 0;
@@ -137,7 +142,12 @@ public class PlayerMovement : MonoBehaviour
 
         //Debug.Log(jumpCount);
         Vector3 movVec = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical"));
+
+        // Adjust rotation
+        Vector3 desiredForward = Vector3.RotateTowards(transform.forward, movVec, turnSpeed * Time.deltaTime, 0f);
+        movRot = Quaternion.LookRotation(desiredForward);
         rb.MovePosition(rb.position + (movVec * movSpd));
+        rb.MoveRotation(movRot);
     }
 
     IEnumerator timer() {
