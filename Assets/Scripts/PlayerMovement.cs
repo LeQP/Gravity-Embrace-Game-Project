@@ -34,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
     private float jumpLimit;
     private bool delayer = false;
     public float turnSpeed = 1f;
+    private Vector3 orientVec = Vector3.down;
     Quaternion movRot = Quaternion.identity;
 
     void Start()
@@ -47,7 +48,7 @@ public class PlayerMovement : MonoBehaviour
     bool GroundCheck() {
         // Approach ground check with using a ray through a RayCast
 	    RaycastHit hit;
-        bool groundTest = Physics.Raycast(transform.position + Vector3.up, transform.up * -1f, out hit, 1f);
+        bool groundTest = Physics.Raycast(transform.position + (orientVec * -1), orientVec, out hit, 1.012f);
         //Debug.Log(hit.collider);
         // hit will contain the distance so check if it corresponds to the object on plane
 	    if(groundTest) {
@@ -58,12 +59,57 @@ public class PlayerMovement : MonoBehaviour
             return false;    
     }
 
+
+    Vector3 orientMove(float movHori, float movVert) {
+        float x = 0f;
+        float y = 0f;
+        float z = 0f;
+
+        if (orientVec == Vector3.down) {
+            x = movHori;
+            z = movVert;
+        }
+        else if (orientVec == Vector3.forward) {
+            y = movVert;
+            x = movHori;
+        }
+        else if (orientVec == Vector3.left) {
+            y = movVert;
+            z = movHori;
+        }
+        else if (orientVec == Vector3.right) {
+            y = movHori;
+            z = -movVert;
+        }
+        else if (orientVec == Vector3.forward) {
+            y = movVert;
+            x = -movHori;
+        }
+        if (orientVec == Vector3.up) {
+            x = movHori;
+            z = -movVert;
+        }
+        return new Vector3(x, y, z);
+    }
     void Update() {
+        orientVec = GravityShift.getOrientation();
+        Debug.DrawRay(transform.position + (orientVec * -1.012f), orientVec, Color.red);
+        if (Input.GetKeyDown(KeyCode.Tab)) {
+            if (GroundCheck()) {
+                Debug.Log("Player is on ground");
+            }
+            else 
+                Debug.Log("Player is not on ground");
+        }
+
         bool isGround = GroundCheck();
         if (isGround) {
             jumpBoostTotal = 0;
             jumpCount = 0;
         }
+        /*else if (transform.position.y < 0.01 && !doubleJump1) {
+            transform.position = new Vector3(transform.position.x, 0, transform.position.z);
+        }*/
         if (isGround && Input.GetKeyDown(KeyCode.Space)) {
             StartCoroutine(timer());
             //Debug.Log("DoubleJump1");
@@ -115,7 +161,7 @@ public class PlayerMovement : MonoBehaviour
                 jumpCount++;
                 //Debug.Log("Jump 1: " + jumpBoostTotal);
                 //rb.AddForce(Vector3.up * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
-                rb.AddForce(Vector3.up * (initalJumpAmt) * jumpSpd);
+                rb.AddForce(orientVec * -1 * (initalJumpAmt) * jumpSpd);
                 jumpBoostTotal = 0;
                 allowBoost = false;
                 //Debug.Log("Single Jump");
@@ -131,7 +177,7 @@ public class PlayerMovement : MonoBehaviour
                 if (jumpBoostTotal > jumpMax)
                     jumpBoostTotal = jumpMax;
                 //Debug.Log("Jump 2: " + jumpBoostTotal);
-                rb.AddForce(Vector3.up * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
+                rb.AddForce(orientVec * -1 * (initalJumpAmt + jumpBoostTotal) * jumpSpd);
                 jumpBoostTotal = 0;
                 allowBoost = false;
                 //Debug.Log("Double Jump");
@@ -139,11 +185,11 @@ public class PlayerMovement : MonoBehaviour
             }
             
         }
-        else
-           rb.AddForce(Vector3.down * gravity);
+        
+        rb.AddForce(orientVec * gravity);
 
         //Debug.Log(jumpCount);
-        Vector3 movVec = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical"));
+        Vector3 movVec = orientMove(Input.GetAxis("Horizontal"),  Input.GetAxis("Vertical"));
 
         // Adjust rotation
         Vector3 desiredForward = Vector3.RotateTowards(transform.forward, movVec, turnSpeed * Time.deltaTime, 0f);

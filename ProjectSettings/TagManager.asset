@@ -5,6 +5,12 @@ TagManager:
   serializedVersion: 2
   tags:
   - ground
+  - Front
+  - Left
+  - Right
+  - Back
+  - Top
+  - Floor
   layers:
   - Default
   - TransparentFX

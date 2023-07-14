@@ -6,21 +6,26 @@ using UnityEngine;
 
 public class GravityShift : MonoBehaviour
 {
+    Transform targetWall;
+    public static int oritentNum = 0;
+    public static Vector3[] orientVecs = {Vector3.down, Vector3.forward, Vector3.left, Vector3.right, Vector3.back, Vector3.up};
+    private Rigidbody rb;
+    private RaycastHit hitFront;
+    private RaycastHit hitBack;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        rb = GetComponent<Rigidbody>();
     }
 
-    public Vector3 getOrientation() {
-        return Vector3.up;
+    public static Vector3 getOrientation() {
+        return orientVecs[oritentNum];
     }
-    Transform targetWall;
+    
 
     bool WallCheck() {
         // Approach ground check with using a ray through a RayCast
-	    RaycastHit hitFront;
-        RaycastHit hitBack;
         float offsetVal = 0.6f;
         bool frontCheck = Physics.Raycast(transform.position + (transform.forward * offsetVal), transform.forward * 1f, out hitFront, 1.6f);
         bool backCheck = Physics.Raycast(transform.position - (transform.forward * offsetVal), transform.forward * -1f, out hitBack, 1.6f);
@@ -48,22 +53,63 @@ public class GravityShift : MonoBehaviour
             return false;    
     }
 
+    void readWall() {
+        if (hitFront.transform.tag == "Floor") {
+            oritentNum = 0;
+        }
+        else if (hitFront.transform.tag == "Front") {
+            oritentNum = 1;
+        }
+        else if (hitFront.transform.tag == "Left") {
+            oritentNum = 2;
+        }
+        else if (hitFront.transform.tag == "Right") {
+            oritentNum = 3;
+        }
+        else if (hitFront.transform.tag == "Back") {
+            oritentNum = 4;
+        }
+        else if (hitFront.transform.tag == "Top") {
+            oritentNum = 5;
+        }
+    }
+
+    void maintainRot() {
+        if (oritentNum == 0) {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, 0)), 1);
+        }
+        else if (oritentNum == 1) {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(-90, transform.rotation.y, 0)), 1);
+        }
+        else if (oritentNum == 2) {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, -90)), 1);
+        }
+        else if (oritentNum == 3) {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, 90)), 1);
+        }
+        else if (oritentNum == 4) {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, 0)), 1);
+        }
+        else if (oritentNum == 5) {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(-180, transform.rotation.y, 0)), 1);
+        }
+    }
     // Update is called once per frame
     void Update()
     {
+
         float offsetVal = 0.6f;
         Debug.DrawRay(transform.position + (transform.forward * offsetVal), transform.forward * 1f, Color.red);
         Debug.DrawRay(transform.position - (transform.forward * offsetVal), transform.forward * -1f, Color.red);
-        Debug.DrawRay(transform.position + Vector3.up, transform.up * -1f, Color.red);
         if (Input.GetKeyDown(KeyCode.LeftShift)) {
             if (WallCheck() && !GroundCheck()) {
                 Debug.Log("Can rotate");
-                Quaternion newAngle = Quaternion.Euler(targetWall.rotation.x, transform.rotation.y, transform.rotation.z);
-                transform.rotation = newAngle;
+                readWall();
             }
             else {
                 Debug.Log("Can't rotate");
             }
         }
+        maintainRot();
     }
 }
