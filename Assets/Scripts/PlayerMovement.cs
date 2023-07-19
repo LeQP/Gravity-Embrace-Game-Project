@@ -59,12 +59,49 @@ public class PlayerMovement : MonoBehaviour
             return false;    
     }
 
-
+    /*
     Vector3 orientMove(float movHori, float movVert) {
+        //Vector3[2] resVecs;
         float x = 0f;
         float y = 0f;
         float z = 0f;
 
+        if (orientVec == Vector3.down) {
+            //resVecs[0] = new Vector(0, 0, movHori);
+            //resVecs[1] = new Vector(0, movHori, 0);
+            //x = movHori;
+            //z = movVert;
+        }
+        else if (orientVec == Vector3.forward) {
+            //y = movVert;
+            //x = movHori;
+            //resVecs[0] = new Vector(0, 0, movHori);
+            //resVecs[1] = new Vector(movHori, 0, 0);
+        }
+        else if (orientVec == Vector3.left) {
+            //y = movVert;
+            //z = movHori;
+        }
+        else if (orientVec == Vector3.right) {
+            //y = movHori;
+            //z = -movVert;
+        }
+        else if (orientVec == Vector3.forward) {
+            //y = movVert;
+            //x = -movHori;
+        }
+        if (orientVec == Vector3.up) {
+            //x = movHori;
+            //z = -movVert;
+        }
+        //return resVecs;
+        return new Vector3(x, y, z);
+    }
+    */
+    Vector3 orientMove(float movHori, float movVert) {
+        float x = 0f;
+        float y = 0f;
+        float z = 0f;
         if (orientVec == Vector3.down) {
             x = movHori;
             z = movVert;
@@ -91,6 +128,8 @@ public class PlayerMovement : MonoBehaviour
         }
         return new Vector3(x, y, z);
     }
+
+
     void Update() {
         orientVec = GravityShift.getOrientation();
         Debug.DrawRay(transform.position + (orientVec * -1.012f), orientVec, Color.red);
@@ -186,16 +225,23 @@ public class PlayerMovement : MonoBehaviour
             
         }
         
-        rb.AddForce(orientVec * gravity);
-
+        //rb.AddForce(orientVec * gravity);
+        transform.Translate(transform.forward * Input.GetAxis("Vertical") * movSpd, Space.World);
+        transform.rotation = Quaternion.Euler(orientVec * -1 * Input.GetAxis("Horizontal") * turnSpeed);
         //Debug.Log(jumpCount);
-        Vector3 movVec = orientMove(Input.GetAxis("Horizontal"),  Input.GetAxis("Vertical"));
 
-        // Adjust rotation
+        
+        Vector3 movVec = orientMove(Input.GetAxis("Horizontal"),  Input.GetAxis("Vertical"));
         Vector3 desiredForward = Vector3.RotateTowards(transform.forward, movVec, turnSpeed * Time.deltaTime, 0f);
-        movRot = Quaternion.LookRotation(desiredForward);
-        rb.MovePosition(rb.position + (movVec * movSpd));
-        rb.MoveRotation(movRot);
+        if (Input.GetKey(KeyCode.Escape)) {
+            Debug.Log("Desireddorward:" + desiredForward);
+            Debug.Log("MoveVec:" + movVec);
+        }
+        
+        
+        
+    
+        
     }
 
     IEnumerator timer() {
