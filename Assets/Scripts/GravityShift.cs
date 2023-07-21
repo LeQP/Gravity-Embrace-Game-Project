@@ -8,19 +8,24 @@ public class GravityShift : MonoBehaviour
 {
     Transform targetWall;
     public static int oritentNum = 0;
-    public static Vector3[] orientVecs = {Vector3.down, Vector3.forward, Vector3.left, Vector3.right, Vector3.back, Vector3.up};
     private Rigidbody rb;
     private RaycastHit hitFront;
     private RaycastHit hitBack;
+    public PlayerMove pm;
+    private Vector3 orientVec;
+    private Vector3[] refVecs = {Vector3.down, Vector3.forward, Vector3.left, Vector3.right, Vector3.back,  Vector3.up};
 
-    // Start is called before the first frame update
+
     void Start()
     {
+        orientVec = Vector3.down;
         rb = GetComponent<Rigidbody>();
     }
 
-    public static Vector3 getOrientation() {
-        return orientVecs[oritentNum];
+    public Vector3 getOrientation() {
+        //Vector3 estVec = Vector3.Cross(transform.forward, transform.right * -1);
+        //orientVec = new Vector3(Mathf.Round(estVec.x), Mathf.Round(estVec.y), Mathf.Round(estVec.z));
+        return orientVec;
     }
     
 
@@ -39,83 +44,75 @@ public class GravityShift : MonoBehaviour
             return false;
     }
 
-    bool GroundCheck() {
-        // Approach ground check with using a ray through a RayCast
-	    RaycastHit hit;
-        bool groundTest = Physics.Raycast(transform.position + Vector3.up, transform.up * -1f, out hit, 1f);
-        //Debug.Log(hit.collider);
-        // hit will contain the distance so check if it corresponds to the object on plane
-	    if(groundTest) {
-            //Debug.Log("Landed");
-            return true;
+
+    void changeGravity() {
+        pm.keyLock();
+        //Set Vertical Axis
+        bool xUsed = false;
+        bool yUsed = false;
+        bool zUsed = false;
+
+        if (orientVec.x != 0) {
+            pm.setAxisState(0, ((int) (orientVec.x * 0.5 + 2.5)));
+            xUsed = true;
         }
-	    else 
-            return false;    
+        else if (orientVec.y != 0) {
+            pm.setAxisState(1, ((int) (orientVec.y * 0.5 + 2.5)));
+            yUsed = true;
+        }
+        else if (orientVec.z != 0) {
+            pm.setAxisState(2, ((int) (orientVec.z * 0.5 + 2.5)));
+            zUsed = true;
+        }
+
+        //Set Horizontal Axis
+        float[] compareVecDist = new float[6];
+        int index = 0;
+        for (int i = 0; i < 6; i++) {
+            compareVecDist[i] = (refVecs[i] - transform.forward).sqrMagnitude;
+        }
+        for (int i = 1; i < 6; i++) {
+            if (compareVecDist[i] < compareVecDist[index]) 
+                index = i;
+        }
+        Vector3 rightMov = Vector3.Cross(-1 * orientVec, refVecs[index]);
+        Debug.Log(rightMov);
+        if (rightMov.x != 0) {
+            pm.setAxisState(0, ((int) (rightMov.x * -0.5 + 0.5)));
+            xUsed = true;
+        }
+        else if (rightMov.y != 0) {
+            pm.setAxisState(1, ((int) (rightMov.y *  -0.5 + 0.5)));
+            yUsed = true;
+        }
+        else if (rightMov.z != 0) {
+            pm.setAxisState(2, ((int) (rightMov.z *  -0.5 + 0.5)));
+            zUsed = true;
+        }
+        if (!xUsed) {
+            pm.setAxisState(0, 4);
+        }
+            
+        else if (!yUsed) {
+            pm.setAxisState(1, 4);
+        }
+            
+        else if (!zUsed) {
+            pm.setAxisState(2, 4);
+        }
+        orientVec = refVecs[index];
+        pm.keyUnlock();
+        pm.pushMov();
     }
 
-    void readWall() {
-        if (hitFront.transform.tag == "Floor") {
-            oritentNum = 0;
-            //rb.constraints = RigidbodyConstraints.None;
-            //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        }
-        else if (hitFront.transform.tag == "Front") {
-            oritentNum = 1;
-            //rb.constraints = RigidbodyConstraints.None;
-            //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
-        }
-        else if (hitFront.transform.tag == "Left") {
-            oritentNum = 2;
-            //rb.constraints = RigidbodyConstraints.None;
-            //rb.constraints = RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
-        }
-        else if (hitFront.transform.tag == "Right") {
-            oritentNum = 3;
-            //rb.constraints = RigidbodyConstraints.None;
-            //rb.constraints = RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
-        }
-        else if (hitFront.transform.tag == "Back") {
-            oritentNum = 4;
-            //rb.constraints = RigidbodyConstraints.None;
-            //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
-        }
-        else if (hitFront.transform.tag == "Top") {
-            oritentNum = 5;
-            //rb.constraints = RigidbodyConstraints.None;
-            //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        }
-    }
-
-    void maintainRot() {
-        if (oritentNum == 0) {
-            transform.rotation = Quaternion.Euler(new Vector3(0, transform.localEulerAngles.y, 0));
-        }
-        else if (oritentNum == 1) {
-            transform.rotation = Quaternion.Euler(new Vector3(0, 0, transform.localEulerAngles.z));
-        }
-        else if (oritentNum == 2) {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, -90)), 1);
-        }
-        else if (oritentNum == 3) {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, 90)), 1);
-        }
-        else if (oritentNum == 4) {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(0, transform.rotation.y, 0)), 1);
-        }
-        else if (oritentNum == 5) {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(new Vector3(-180, transform.rotation.y, 0)), 1);
-        }
-    }
     // Update is called once per frame
     void Update() {
         float offsetVal = 0.6f;
         Debug.DrawRay(transform.position + (transform.forward * offsetVal), transform.forward * 2f, Color.red);
         Debug.DrawRay(transform.position - (transform.forward * offsetVal), transform.forward * -2f, Color.red);
         if (Input.GetKeyDown(KeyCode.LeftShift)) {
-            if (WallCheck() && !GroundCheck()) {
-                readWall();
-                maintainRot();
-                Debug.Log("Can rotate");
+            if (WallCheck() && !pm.GroundCheck()) {
+                changeGravity();
             }
             else {
                 Debug.Log("Can't rotate");

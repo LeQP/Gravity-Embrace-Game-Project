@@ -12,29 +12,65 @@ public class PlayerMove : MonoBehaviour
     public float gravity = 5f;
     private float gravityAmt = 0f;
     public float airSpd = 2f;
-
     public float turnSpd = 1f;
     public float jumpHeight = 10f;
-    //public float jumpHeight2;
-
-
     private float movHor;
     private float movVer;
     Vector3 movVec;
 
     private Vector3 orientVec = Vector3.down;
+    public GravityShift gs;
 
     private bool doJump = false;
     private bool stopJump = false;
     private bool startTimer = false;
     public float jumpTimer = 0.5f;
     private float timer = 0f;
+    private bool key = true;
+
+
+    /*
+    axisState is an array used to decide the player's movement in regards to the world's axis values.
+    Since the player can walk on walls, it changes how the player moves along the 3 axises with the controls.
+    To keep track of which axises and direction (+ or -), each index of the array corresponds to the three axises (x, y, and z)
+    and have a value 0-4 to indicate how that axis moves.
+
+    Indexes
+    0 = Correspond to the x axis
+    1 = Correspond to the y axis
+    2 = Correspond to the z axis
+
+    Values
+    0 = the player's position increases in axis value when the player presses up (Horizontal movement).
+    1 = the player's position decreases in axis value when the player presses right (Horizontal movement).
+    2 = the player's position increases in axis value when the player presses up (Vertical movement).
+    3 = the player's position decreases in axis value when the player presses right (Vertical movement).
+    4 = the axis is not in used
+
+    */
+    private int[] axisState;
+    private bool[] axisFreezeRot;
     
     // Start is called before the first frame update
     void Start() {
         rb = GetComponent<Rigidbody>();
         gravityAmt = gravity;
         timer = jumpTimer;
+        orientVec = gs.getOrientation();
+        axisState = new int[3];
+        axisState[0] = 0;
+        axisState[1] = 4;
+        axisState[2] = 2;
+        axisFreezeRot = new bool[3];
+        axisFreezeRot[0] = true;
+        axisFreezeRot[1] = false;
+        axisFreezeRot[2] = true;
+        //rotVec = new Vector3(0f, 0.0001f, 0f);
+
+    }
+
+    public void pushMov() {
+        movVec = orientMove(0f, 0.1f);
     }
 
     public void OnMove(InputValue input) {
@@ -42,38 +78,49 @@ public class PlayerMove : MonoBehaviour
         movVec = orientMove(inputVec.x, inputVec.y);
     }
 
-    Vector3 orientMove(float movHor, float movVer) {
-        float x = 0f;
-        float y = 0f;
-        float z = 0f;
-        if (orientVec == Vector3.down) {
-            x = movHor;
-            z = movVer;
+    public void setAxisState(int index, int state) {
+        axisState[index] = state;
+        if (state == 4) {
+            axisFreezeRot[index] = false;
         }
-        else if (orientVec == Vector3.forward) {
-            y = movVer;
-            x = movHor;
+        else {
+            axisFreezeRot[index] = true;
         }
-        else if (orientVec == Vector3.left) {
-            y = movVer;
-            z = movHor;
-        }
-        else if (orientVec == Vector3.right) {
-            y = movHor;
-            z = -movVer;
-        }
-        else if (orientVec == Vector3.forward) {
-            y = movVer;
-            x = -movHor;
-        }
-        if (orientVec == Vector3.up) {
-            x = movHor;
-            z = -movVer;
-        }
-        return new Vector3(x, y, z);
     }
 
+    public void keyLock() {
+        key = false;
+    }
 
+    public void keyUnlock() {
+        key = true;
+    }
+
+    public void readAxisState() {
+        Debug.Log("X = " + axisState[0]);
+        Debug.Log("Y = " + axisState[1]);
+        Debug.Log("Z = " + axisState[2]);
+    }
+
+    private float readAxisState(int axisNum, float movHor, float movVer) {
+        if (axisNum == 0) 
+            return movHor;
+        else if (axisNum == 1) 
+            return -movHor;
+        else if (axisNum == 2) 
+            return movVer;
+        else if (axisNum == 3) 
+            return -movVer;
+        else 
+            return 0f;
+    }
+    Vector3 orientMove(float movHor, float movVer) {
+        float x = readAxisState(axisState[0], movHor, movVer);
+        float y = readAxisState(axisState[1], movHor, movVer);
+        float z = readAxisState(axisState[2], movHor, movVer);
+        //Debug.Log(new Vector3(x, y, z));
+        return new Vector3(x, y, z);
+    }
 
     void performJump() {
         gravityAmt = 0f;
@@ -83,28 +130,23 @@ public class PlayerMove : MonoBehaviour
         gravityAmt = gravity;
     }
     void jump() {
-
         if (Input.GetKeyDown(KeyCode.Space)) {  
-            Debug.Log("Jump");
             doJump = true;
         }
 
         if (Input.GetKeyUp(KeyCode.Space)) {
-            Debug.Log("Gravity (Key Up)");
             stopJump = true;
         }
 
         if (startTimer) {
-            Debug.Log("Timer Decrements");
             timer -= Time.deltaTime;
             if (timer <= 0) {
-                Debug.Log("Gravity (Timer Ran Out)");
                 stopJump = true;
             }
         }
     }
 
-    bool GroundCheck() {
+    public bool GroundCheck() {
         // Approach ground check with using a ray through a RayCast
 	    RaycastHit hit;
         bool groundTest = Physics.Raycast(transform.position + (orientVec * -1), orientVec, out hit, 1.13f);
@@ -115,57 +157,12 @@ public class PlayerMove : MonoBehaviour
     }
 
     void Update() {
-        Debug.DrawRay(transform.position + (orientVec * -1.012f), orientVec, Color.red);
         jump();
-        if (Input.GetKeyDown(KeyCode.Alpha1)) {
-            if (GroundCheck())
-                Debug.Log("IsGrounded");
-            else
-                Debug.Log("Not Grounded");
-        }
         if (Input.GetKeyDown(KeyCode.Alpha0)) {
-            /*
-            Debugger("x+ and y+", Vector3.right, Vector3.up);
-            Debugger("y+ and x+", Vector3.up, Vector3.right);
-            Debug.Log("---");
-            Debugger("y+ and z+", Vector3.up, Vector3.forward);
-            Debugger("z+ and y+", Vector3.forward, Vector3.up);
-            Debug.Log("---");
-            Debugger("z+ and x+", Vector3.forward, Vector3.right);
-            Debugger("x+ and z+", Vector3.right, Vector3.forward);
-            Debug.Log("---");
-            Debug.Log("---");
-            Debugger("y+ and x+", Vector3.up, Vector3.right);
-            Debugger("y+ and x-", Vector3.up, Vector3.left);
-            Debug.Log("---");
-            Debugger("y+ and z+", Vector3.up, Vector3.forward);
-            Debugger("y+ and z-", Vector3.up, Vector3.back);
-            Debug.Log("---");
-            Debugger("z+ and x+", Vector3.forward, Vector3.right);
-            Debugger("z+ and x-", Vector3.forward, Vector3.left);
-            */
-            /*
-            Debugger("Floor = z+ and x-", Vector3.forward, Vector3.left);
-            Debugger("Front = y+ and x-", Vector3.up, Vector3.left);
-            Debugger("Back = y+ and x+", Vector3.up, Vector3.right);
-            Debugger("Left = y+ and z-", Vector3.up, Vector3.back);
-            Debugger("Right = y+ and z+", Vector3.up, Vector3.forward);
-            */
-            /*
-            Debugger("y- and z+", Vector3.down, Vector3.forward);
-            Debugger("y- and z-", Vector3.down, Vector3.back);
-            Debugger("y- and x+", Vector3.down, Vector3.right);
-            Debugger("y- and x-", Vector3.down, Vector3.left);
-            */
-            Debugger("(floor -> front orient) -> top: ", Vector3.forward, Vector3.up);
-            Debugger("(floor -> front orient) -> floor", Vector3.forward, Vector3.down);
-            Debugger("(floor -> front orient) -> left: ", Vector3.forward, Vector3.left);
-            Debugger("(floor -> front orient) -> right", Vector3.forward, Vector3.right);
-
-
+            readAxisState();
+            Debug.Log("movVec = " + movVec);
+            Debug.Log("orientVec * -1 = " + orientVec * -1);
         }
-
-
     }
 
     void Debugger(string quote, Vector3 a, Vector3 b) {
@@ -174,35 +171,35 @@ public class PlayerMove : MonoBehaviour
     
     // Update is called once per frame
     void FixedUpdate() {
-        bool isGround = GroundCheck();
-        float modSpd = 0f;
-        if (isGround) {
-            modSpd = groundSpd;
-        }
-        else
-            modSpd = airSpd;
-        orientVec = GravityShift.getOrientation();
-        Vector3 newDir = Vector3.RotateTowards(transform.forward, movVec, turnSpd * Time.deltaTime, 0f);
-        rb.AddForce(movVec * movSpd * modSpd);
-        transform.rotation = Quaternion.LookRotation(newDir, orientVec * -1);
-        
-        if (doJump && isGround) {
-            //Debug.Log("Jump");
-            performJump();
-            Debug.Log("Start Timer");
-            startTimer = true;
-            doJump = false;
-        }
+        if (key) {
+            bool isGround = GroundCheck();
+            float modSpd = 0f;
 
-        if (stopJump) {
-            releaseJump();
-            timer = jumpTimer;
-            //if (startTimer)
-            //Debug.Log("Stop Timer");
-            startTimer = false;
-            stopJump = false;
+            if (isGround) 
+                modSpd = groundSpd;
+            else
+                modSpd = airSpd;
+            orientVec = gs.getOrientation();
+            rb.AddForce(movVec * movSpd * modSpd);
+
+
+            if (movVec != Vector3.zero)  {
+                Quaternion newRot = Quaternion.LookRotation(movVec, orientVec * -1);
+                transform.rotation = newRot;
+            }
+            if (doJump && isGround) {
+                performJump();
+                startTimer = true;
+                doJump = false;
+            }
+            if (stopJump) {
+                releaseJump();
+                timer = jumpTimer;
+                startTimer = false;
+                stopJump = false;
+            }
+            rb.AddForce(orientVec * gravityAmt);
         }
-        rb.AddForce(orientVec * gravityAmt);
     }
 
 

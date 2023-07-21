@@ -350,6 +350,7 @@
 -r:"Library/Bee/artifacts/1900b0aE.dag/UnityEditor.UI.ref.dll"
 -r:"Library/Bee/artifacts/1900b0aE.dag/UnityEngine.UI.ref.dll"
 "Assets/Scripts/GravityShift.cs"
+"Assets/Scripts/MovementDetails.cs"
 "Assets/Scripts/PlayerMove.cs"
 "Assets/Scripts/PlayerMovement.cs"
 "Assets/Scripts/WallCollision.cs"

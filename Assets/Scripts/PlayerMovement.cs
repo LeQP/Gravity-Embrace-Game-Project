@@ -131,7 +131,6 @@ public class PlayerMovement : MonoBehaviour
 
 
     void Update() {
-        orientVec = GravityShift.getOrientation();
         Debug.DrawRay(transform.position + (orientVec * -1.012f), orientVec, Color.red);
         if (Input.GetKeyDown(KeyCode.Tab)) {
             if (GroundCheck()) {
