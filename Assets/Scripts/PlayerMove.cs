@@ -27,7 +27,8 @@ public class PlayerMove : MonoBehaviour
     public float jumpTimer = 0.5f;
     private float timer = 0f;
     private bool key = true;
-
+    public Transform vCamera;
+    private bool shiftCamera = false;
 
     /*
     axisState is an array used to decide the player's movement in regards to the world's axis values.
@@ -71,6 +72,7 @@ public class PlayerMove : MonoBehaviour
 
     public void pushMov() {
         movVec = orientMove(0f, 0.1f);
+        shiftCamera = true;
     }
 
     public void OnMove(InputValue input) {
@@ -118,7 +120,6 @@ public class PlayerMove : MonoBehaviour
         float x = readAxisState(axisState[0], movHor, movVer);
         float y = readAxisState(axisState[1], movHor, movVer);
         float z = readAxisState(axisState[2], movHor, movVer);
-        //Debug.Log(new Vector3(x, y, z));
         return new Vector3(x, y, z);
     }
 
@@ -181,11 +182,13 @@ public class PlayerMove : MonoBehaviour
                 modSpd = airSpd;
             orientVec = gs.getOrientation();
             rb.AddForce(movVec * movSpd * modSpd);
-
-
             if (movVec != Vector3.zero)  {
                 Quaternion newRot = Quaternion.LookRotation(movVec, orientVec * -1);
                 transform.rotation = newRot;
+            }
+            if (shiftCamera) {
+                vCamera.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z);
+                shiftCamera = false;
             }
             if (doJump && isGround) {
                 performJump();

@@ -14,7 +14,7 @@ public class GravityShift : MonoBehaviour
     public PlayerMove pm;
     private Vector3 orientVec;
     private Vector3[] refVecs = {Vector3.down, Vector3.forward, Vector3.left, Vector3.right, Vector3.back,  Vector3.up};
-
+    public Transform vCamera;
 
     void Start()
     {
@@ -76,7 +76,6 @@ public class GravityShift : MonoBehaviour
                 index = i;
         }
         Vector3 rightMov = Vector3.Cross(-1 * orientVec, refVecs[index]);
-        Debug.Log(rightMov);
         if (rightMov.x != 0) {
             pm.setAxisState(0, ((int) (rightMov.x * -0.5 + 0.5)));
             xUsed = true;
