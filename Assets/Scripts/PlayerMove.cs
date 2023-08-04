@@ -26,6 +26,13 @@ public class PlayerMove : MonoBehaviour
     private bool startTimer = false;
     public float jumpTimer = 0.5f;
     private float timer = 0f;
+    private bool doForce = false;
+    private bool noForce = true;
+
+    public float forceMass = 1;
+    private float forceFact = 1f;
+    private float norMass;
+
     private bool key = true;
     public Transform vCamera;
     private bool shiftCamera = false;
@@ -51,10 +58,12 @@ public class PlayerMove : MonoBehaviour
     */
     private int[] axisState;
     private bool[] axisFreezeRot;
-    
+
     // Start is called before the first frame update
-    void Start() {
+    void Start()
+    {
         rb = GetComponent<Rigidbody>();
+        norMass = rb.mass;
         gravityAmt = gravity;
         timer = jumpTimer;
         orientVec = gs.getOrientation();
@@ -70,136 +79,188 @@ public class PlayerMove : MonoBehaviour
 
     }
 
-    public void pushMov() {
+    public void pushMov()
+    {
         movVec = orientMove(0f, 0.1f);
         shiftCamera = true;
     }
 
-    public void OnMove(InputValue input) {
+    public void OnMove(InputValue input)
+    {
         Vector2 inputVec = input.Get<Vector2>();
         movVec = orientMove(inputVec.x, inputVec.y);
     }
 
-    public void setAxisState(int index, int state) {
+    public void setAxisState(int index, int state)
+    {
         axisState[index] = state;
-        if (state == 4) {
+        if (state == 4)
+        {
             axisFreezeRot[index] = false;
         }
-        else {
+        else
+        {
             axisFreezeRot[index] = true;
         }
     }
 
-    public void keyLock() {
+    public void keyLock()
+    {
         key = false;
     }
 
-    public void keyUnlock() {
+    public void keyUnlock()
+    {
         key = true;
     }
 
-    public void readAxisState() {
+    public void readAxisState()
+    {
         Debug.Log("X = " + axisState[0]);
         Debug.Log("Y = " + axisState[1]);
         Debug.Log("Z = " + axisState[2]);
     }
 
-    private float readAxisState(int axisNum, float movHor, float movVer) {
-        if (axisNum == 0) 
+    private float readAxisState(int axisNum, float movHor, float movVer)
+    {
+        if (axisNum == 0)
             return movHor;
-        else if (axisNum == 1) 
+        else if (axisNum == 1)
             return -movHor;
-        else if (axisNum == 2) 
+        else if (axisNum == 2)
             return movVer;
-        else if (axisNum == 3) 
+        else if (axisNum == 3)
             return -movVer;
-        else 
+        else
             return 0f;
     }
-    Vector3 orientMove(float movHor, float movVer) {
+    Vector3 orientMove(float movHor, float movVer)
+    {
         float x = readAxisState(axisState[0], movHor, movVer);
         float y = readAxisState(axisState[1], movHor, movVer);
         float z = readAxisState(axisState[2], movHor, movVer);
         return new Vector3(x, y, z);
     }
 
-    void performJump() {
+    void performJump()
+    {
         gravityAmt = 0f;
         rb.AddForce(orientVec * -1 * jumpHeight, ForceMode.Impulse);
     }
-    void releaseJump() {
+    void releaseJump()
+    {
         gravityAmt = gravity;
     }
-    void jump() {
-        if (Input.GetKeyDown(KeyCode.Space)) {  
+    void jump()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
             doJump = true;
         }
 
-        if (Input.GetKeyUp(KeyCode.Space)) {
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
             stopJump = true;
         }
-
-        if (startTimer) {
+        if (startTimer)
+        {
             timer -= Time.deltaTime;
-            if (timer <= 0) {
+            if (timer <= 0)
+            {
                 stopJump = true;
             }
         }
     }
+    void forceGravity()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            doForce = true;
+        }
 
-    public bool GroundCheck() {
-        // Approach ground check with using a ray through a RayCast
-	    RaycastHit hit;
-        bool groundTest = Physics.Raycast(transform.position + (orientVec * -1), orientVec, out hit, 1.13f);
-	    if(groundTest) 
-            return true;
-	    else 
-            return false;    
+        if (Input.GetKeyUp(KeyCode.LeftControl))
+        {
+            doForce = false;
+        }
     }
 
-    void Update() {
+    public bool GroundCheck()
+    {
+        // Approach ground check with using a ray through a RayCast
+        RaycastHit hit;
+        bool groundTest = Physics.Raycast(transform.position + (orientVec * -1), orientVec, out hit, 1.13f);
+        if (groundTest)
+            return true;
+        else
+            return false;
+    }
+
+    void Update()
+    {
         jump();
-        if (Input.GetKeyDown(KeyCode.Alpha0)) {
+        forceGravity();
+        if (Input.GetKeyDown(KeyCode.Alpha0))
+        {
             readAxisState();
             Debug.Log("movVec = " + movVec);
             Debug.Log("orientVec * -1 = " + orientVec * -1);
         }
     }
 
-    void Debugger(string quote, Vector3 a, Vector3 b) {
+    void Debugger(string quote, Vector3 a, Vector3 b)
+    {
         Debug.Log(quote + ": " + Vector3.Cross(a, b));
     }
-    
+
     // Update is called once per frame
-    void FixedUpdate() {
-        if (key) {
+    void FixedUpdate()
+    {
+        if (key)
+        {
             bool isGround = GroundCheck();
             float modSpd = 0f;
 
-            if (isGround) 
+            if (isGround)
                 modSpd = groundSpd;
             else
                 modSpd = airSpd;
             orientVec = gs.getOrientation();
-            rb.AddForce(movVec * movSpd * modSpd);
-            if (movVec != Vector3.zero)  {
+            rb.AddForce(movVec * movSpd * modSpd * rb.mass * forceFact);
+            Debug.Log(movSpd * modSpd * rb.mass * forceFact);
+            if (movVec != Vector3.zero)
+            {
                 Quaternion newRot = Quaternion.LookRotation(movVec, orientVec * -1);
                 transform.rotation = newRot;
             }
-            if (shiftCamera) {
+            if (shiftCamera)
+            {
                 vCamera.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z);
                 shiftCamera = false;
             }
-            if (doJump && isGround) {
+            if (doJump && isGround)
+            {
                 performJump();
                 startTimer = true;
                 doJump = false;
             }
-            if (stopJump) {
+            if (stopJump)
+            {
                 releaseJump();
                 timer = jumpTimer;
                 startTimer = false;
                 stopJump = false;
+            }
+            if (doForce)
+            {
+                forceFact = 1.7f;
+                rb.mass = forceMass;
+                rb.AddForce(orientVec * gravity * forceMass * 3);
+                //doForce = false;
+            }
+            if (!doForce)
+            {
+                forceFact = 1f;
+                rb.mass = norMass;
             }
             rb.AddForce(orientVec * gravityAmt);
         }
